@@ -10,8 +10,7 @@ class PrioritizedSweepingAgent:
         self.theta = theta
         self.max_iterations = max_iterations
 
-        self.states = [(r, c) for r in range(self.env.rows) for c in range(self.env.cols)
-                       if (r,c) not in self.env.furniture]
+        self.states = [(r, c) for r in range(self.env.rows) for c in range(self.env.cols) if (r,c) not in self.env.furniture]
 
         self.V = {s: 0.0 for s in self.states}
 
