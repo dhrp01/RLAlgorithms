@@ -17,13 +17,10 @@ class TrueOnlineSarsaCatVsMonster:
         self.actions = self.env.actions
         self.num_actions = len(self.actions)
 
-        # Collect all valid states (including monsters and goal), except furniture are also part of state space but unreachable?
-        # We'll just store Q for all non-furniture states:
         self.states = [(r,c) for r in range(self.env.rows) for c in range(self.env.cols) if (r,c) not in self.env.furniture]
         self.state_to_id = {s:i for i,s in enumerate(self.states)}
         self.num_states = len(self.states)
 
-        # Q-table: shape [num_states, num_actions]
         self.Q = np.zeros((self.num_states, self.num_actions))
 
     def state_id(self, s):
@@ -49,7 +46,6 @@ class TrueOnlineSarsaCatVsMonster:
             a_id = self.epsilon_greedy(s_id)
             q_old = self.Q[s_id,a_id]
 
-            # Eligibility traces
             e = np.zeros((self.num_states, self.num_actions))
 
             done = False
@@ -70,10 +66,6 @@ class TrueOnlineSarsaCatVsMonster:
                 delta = r + self.gamma * q_next - q
                 e[s_id,a_id] += 1.0
 
-                # True Online Sarsa update
-                # Q <- Q + alpha [delta + q - q_old] e - alpha(q - q_old)*I
-                # where I is indicator vector for (s,a)
-                # For tabular: same formula as given in previous code
                 correction = self.alpha * (q - q_old)
                 self.Q += self.alpha * (delta + q - q_old) * e
                 self.Q[s_id,a_id] -= correction
@@ -86,26 +78,21 @@ class TrueOnlineSarsaCatVsMonster:
                     s_id = next_s_id
                     a_id = a_next_id
 
-            # After each episode compute MSE
             mse = self.compute_mse()
             MSE_list.append(mse)
 
         return MSE_list
 
     def initial_state(self):
-        # The environment provides initial_state function
-        # or we pick a random valid initial state:
         return self.env.initial_state()
 
     def compute_mse(self):
-        # Compute MSE between V(s)=max_a Q(s,a) and env.optimal_values
         V = {}
         for s in self.states:
             s_id = self.state_id(s)
             V[s] = np.max(self.Q[s_id])
         errors = []
         for s, opt_val in self.env.optimal_values.items():
-            # Some states might be furniture (None in opt_val?), skip if not in Q
             if opt_val is not None and s in self.state_to_id:
                 v_est = V[s]
                 errors.append((v_est - opt_val)**2)
@@ -174,12 +161,10 @@ if __name__ == "__main__":
     agent = TrueOnlineSarsaCatVsMonster(env, gamma=env.gamma, alpha=2e-4, lambd=0.9, epsilon=0.1, num_episodes=1000000)
     mse_list = agent.run_true_online_sarsa()
 
-    # Print final values and policy
     agent.print_values()
     final_policy = agent.derive_policy()
     agent.print_policy(final_policy)
 
-    # Plot MSE vs Episodes
     plt.figure(figsize=(8,5))
     plt.plot(range(1, len(mse_list)+1), mse_list)
     plt.xlabel("Episodes")

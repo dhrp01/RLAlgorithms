@@ -19,9 +19,8 @@ class REINFORCEWithBaselineAgent:
         self.num_actions = len(self.mdp.actions)
         self.actions = self.mdp.actions
 
-        # Initialize parameters for policy (theta) and baseline (w)
         self.theta = np.zeros((self.num_states, self.num_actions))
-        self.w = np.zeros(self.num_states)  # baseline weights
+        self.w = np.zeros(self.num_states)
 
     def softmax_policy(self, s_id):
         prefs = self.theta[s_id]
@@ -51,7 +50,6 @@ class REINFORCEWithBaselineAgent:
         MSE_list = []
         for ep in range(self.num_episodes):
             episode = self.generate_episode()
-            # Compute returns G_t
             T = len(episode)
             G = np.zeros(T)
             returns = 0.0
@@ -59,7 +57,6 @@ class REINFORCEWithBaselineAgent:
                 returns = self.gamma * returns + episode[t][2]
                 G[t] = returns
 
-            # Update each step of the episode
             for t in range(T):
                 s = episode[t][0]
                 a_id = episode[t][1]
@@ -67,17 +64,14 @@ class REINFORCEWithBaselineAgent:
                 s_id = self.state_to_id[s]
 
                 baseline = self.w[s_id]
-                # Update baseline
                 self.w[s_id] += self.alpha_w * (g - baseline)
 
-                # Update policy
                 probs = self.softmax_policy(s_id)
                 grad_log_pi = -probs
                 grad_log_pi[a_id] += 1.0
 
                 self.theta[s_id,:] += self.alpha_theta * (g - baseline) * grad_log_pi
 
-            # Compute MSE after each episode
             mse = self.compute_mse()
             MSE_list.append(mse)
         return MSE_list
@@ -149,12 +143,10 @@ if __name__ == "__main__":
     agent = REINFORCEWithBaselineAgent(mdp, gamma=mdp.gamma, alpha_theta=2e-4, alpha_w=0.1, num_episodes=1000000)
     mse_list = agent.run_reinforce_with_baseline()
 
-    # Print final values and policy
     agent.print_values()
     final_policy = agent.derive_greedy_policy()
     agent.print_policy(final_policy)
 
-    # Plot MSE vs Episodes
     plt.figure(figsize=(8,5))
     plt.plot(range(1, len(mse_list)+1), mse_list)
     plt.xlabel("Episodes")

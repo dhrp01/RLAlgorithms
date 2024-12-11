@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import random
+from collections import defaultdict
 from gridworldmdp import GridWorldMDP
 
 class SemiGradientNStepSarsaAgent:
@@ -13,15 +14,12 @@ class SemiGradientNStepSarsaAgent:
         self.gamma = mdp.gamma if gamma is None else gamma
         self.num_episodes = num_episodes
 
-        # State-Action feature dimension: 25 states * 4 actions = 100
         self.num_states = self.mdp.rows * self.mdp.cols
         self.num_actions = self.mdp.n_actions
         self.feature_dim = self.num_states * self.num_actions
 
-        # Initialize weights
         self.w = np.zeros(self.feature_dim)
 
-        # Actions
         self.action_list = self.mdp.actions
 
     def state_to_id(self, s):
@@ -29,8 +27,6 @@ class SemiGradientNStepSarsaAgent:
         return r * self.mdp.cols + c
 
     def sa_to_feature(self, s, a):
-        # One-hot encoding:
-        # index = state_id * num_actions + action_id
         s_id = self.state_to_id(s)
         a_id = self.action_list.index(a)
         x = np.zeros(self.feature_dim)
@@ -46,14 +42,12 @@ class SemiGradientNStepSarsaAgent:
         if random.random() < self.epsilon:
             return random.choice(self.action_list)
         else:
-            # Choose best action w.r.t current Q
             q_values = [self.Q(s,a) for a in self.action_list]
             max_q = max(q_values)
             best_actions = [a for a, qv in zip(self.action_list, q_values) if qv == max_q]
             return random.choice(best_actions)
 
     def generate_episode(self):
-        # Start from start state
         s = self.mdp.start
         episode = []
         a = self.epsilon_greedy(s)
@@ -61,9 +55,7 @@ class SemiGradientNStepSarsaAgent:
         done = False
         steps = 0
         while not done:
-            # Take action a
             transitions = self.mdp.get_next_state_distribution(s,a)
-            # This MDP is stochastic, but transitions is a distribution. We sample from it.
             probs = [tr[0] for tr in transitions]
             idx = np.random.choice(range(len(transitions)), p=probs)
             p, s_next, r, done = transitions[idx]
@@ -82,15 +74,11 @@ class SemiGradientNStepSarsaAgent:
         return episode
 
     def run_n_step_sarsa(self):
-        # n-step Sarsa using semi-gradient update
         MSE_list = []
         for ep in range(self.num_episodes):
             episode = self.generate_episode()
-            # episode is a list of (S_t, A_t, R_{t+1})
             T = len(episode)
-            # We will use indices t for states and actions: S_t,A_t,R_{t+1}
-            # For convenience, define an array of states, actions, rewards:
-            S = [e[0] for e in episode] + [None]  # final S_{T} is None
+            S = [e[0] for e in episode] + [None]
             A = [e[1] for e in episode] + [None]
             R = [e[2] for e in episode]
 
@@ -98,20 +86,17 @@ class SemiGradientNStepSarsaAgent:
                 tau = t - self.n + 1
                 if tau < 0:
                     continue
-                # Compute G
                 G = 0.0
                 gamma_power = 1.0
                 for k in range(tau+1, min(tau+self.n+1, T+1)):
-                    G += gamma_power * R[k-1]  # R_{k} is at R[k-1] since R_1=R[0]
+                    G += gamma_power * R[k-1]
                     gamma_power *= self.gamma
                 if tau + self.n < T:
-                    # add gamma^n Q(S_{tau+n},A_{tau+n})
                     S_tau_n = S[tau+self.n]
                     A_tau_n = A[tau+self.n]
                     if A_tau_n is not None:
                         G += gamma_power * self.Q(S_tau_n, A_tau_n)
 
-                # Update weights
                 S_tau = S[tau]
                 A_tau = A[tau]
                 if A_tau is not None:
@@ -119,15 +104,12 @@ class SemiGradientNStepSarsaAgent:
                     x = self.sa_to_feature(S_tau, A_tau)
                     self.w += self.alpha * (G - Q_tau) * x
 
-            # After each episode, compute MSE
             mse = self.compute_mse()
             MSE_list.append(mse)
 
         return MSE_list
 
     def compute_mse(self):
-        # Compute MSE for state values.
-        # State value V(s) = max_a Q(s,a) and compare with mdp.optimal_values.
         errors = []
         for s, opt_val in self.mdp.optimal_values.items():
             if opt_val is not None:
@@ -139,7 +121,6 @@ class SemiGradientNStepSarsaAgent:
         return sum(errors)/len(errors)
 
     def get_value_function(self):
-        # V(s)=max_a Q(s,a)
         V = {}
         for r in range(self.mdp.rows):
             for c in range(self.mdp.cols):
@@ -196,8 +177,6 @@ class SemiGradientNStepSarsaAgent:
 
 
 if __name__ == "__main__":
-    # Assuming GridWorldMDP is defined as per user's code.
-    from collections import defaultdict
     random.seed(0)
     np.random.seed(0)
 
@@ -205,14 +184,11 @@ if __name__ == "__main__":
     agent = SemiGradientNStepSarsaAgent(mdp, n=2, alpha=0.05, epsilon=0.5, num_episodes=1000000, gamma=mdp.gamma)
     mse_list = agent.run_n_step_sarsa()
 
-    # Print final values
     agent.print_values()
 
-    # Print final policy
     final_policy = agent.derive_policy()
     agent.print_policy(final_policy)
 
-    # Plot learning curve (MSE vs Episodes)
     plt.figure(figsize=(8,5))
     plt.plot(range(1, len(mse_list)+1), mse_list)
     plt.xlabel("Episodes")
