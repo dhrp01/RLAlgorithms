@@ -122,27 +122,61 @@ class PrioritizedSweepingAgent:
             print(" ".join(row_str))
 
 
+# if __name__ == "__main__":
+#     mdp = GridWorldMDP(gamma=0.9)
+#     agent = PrioritizedSweepingAgent(mdp, theta=1e-2, max_iterations=2000)
+
+#     mse_values = []
+#     iterations = 20
+#     updates_per_iter = 20
+
+#     for i in range(iterations):
+#         agent.priority_sweeping(updates=updates_per_iter)
+#         mse = agent.compute_mse()
+#         mse_values.append(mse)
+
+#     agent.print_values()
+#     final_policy = agent.derive_policy()
+#     agent.print_policy(final_policy)
+
+#     plt.figure(figsize=(8,5))
+#     plt.plot(range(1, iterations+1), mse_values, marker='o')
+#     plt.xlabel("Iteration")
+#     plt.ylabel("MSE")
+#     plt.title("Prioritized Sweeping Learning Curve (MSE vs Iterations)")
+#     plt.grid(True)
+#     plt.show()
+
+
 if __name__ == "__main__":
     mdp = GridWorldMDP(gamma=0.9)
-    agent = PrioritizedSweepingAgent(mdp, theta=1e-9, max_iterations=2000)
 
-    mse_values = []
+    # Define theta values to test
+    theta_values = [1, 5e-1, 1e-2]
     iterations = 20
     updates_per_iter = 20
 
-    for i in range(iterations):
-        agent.priority_sweeping(updates=updates_per_iter)
-        mse = agent.compute_mse()
-        mse_values.append(mse)
+    # Plot setup
+    plt.figure(figsize=(10, 6))
+    
+    for theta in theta_values:
+        # Create an agent with the current theta
+        agent = PrioritizedSweepingAgent(mdp, theta=theta, max_iterations=2000)
+        mse_values = []
 
-    agent.print_values()
-    final_policy = agent.derive_policy()
-    agent.print_policy(final_policy)
+        for i in range(iterations):
+            agent.priority_sweeping(updates=updates_per_iter)
+            mse = agent.compute_mse()
+            mse_values.append(mse)
 
-    plt.figure(figsize=(8,5))
-    plt.plot(range(1, iterations+1), mse_values, marker='o')
+        # Plot MSE values for the current theta
+        plt.plot(range(1, iterations + 1), mse_values, label=f"Theta = {theta:.0e}", marker='o')
+
+    # Final plot adjustments
     plt.xlabel("Iteration")
     plt.ylabel("MSE")
     plt.title("Prioritized Sweeping Learning Curve (MSE vs Iterations)")
+    plt.legend()
     plt.grid(True)
     plt.show()
+

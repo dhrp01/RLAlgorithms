@@ -158,7 +158,7 @@ class TrueOnlineSarsaCatVsMonster:
 
 if __name__ == "__main__":
     env = CatVsMonster(gamma=0.925)
-    agent = TrueOnlineSarsaCatVsMonster(env, gamma=env.gamma, alpha=2e-4, lambd=0.9, epsilon=0.1, num_episodes=1000000)
+    agent = TrueOnlineSarsaCatVsMonster(env, gamma=env.gamma, alpha=0.005, lambd=0.9, epsilon=0.1, num_episodes=5000)
     mse_list = agent.run_true_online_sarsa()
 
     agent.print_values()

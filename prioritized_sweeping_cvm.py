@@ -5,10 +5,10 @@ from catvsmonstermdp import CatVsMonster
 import matplotlib.pyplot as plt
 
 class PrioritizedSweepingAgent:
-    def __init__(self, env: CatVsMonster, theta=1e-6, max_iterations=1000):
+    def __init__(self, env: CatVsMonster, theta=1e-6):#, max_iterations=1000):
         self.env = env
         self.theta = theta
-        self.max_iterations = max_iterations
+        # self.max_iterations = max_iterations
 
         self.states = [(r, c) for r in range(self.env.rows) for c in range(self.env.cols) if (r,c) not in self.env.furniture]
 
@@ -99,11 +99,11 @@ class PrioritizedSweepingAgent:
             if diff > self.theta:
                 heapq.heappush(pq, (-diff, s))
 
-        for _ in range(n):
+        for _ in range(n): #updates per sweep
             if not pq:
                 break
             priority, s = heapq.heappop(pq)
-            priority = -priority
+            # priority = -priority
             old_val = self.V[s]
             self.V[s] = self.compute_max_action_value(s)
             diff = abs(old_val - self.V[s])
@@ -114,8 +114,9 @@ class PrioritizedSweepingAgent:
                 old_val_p = self.V[p]
                 new_val_p = self.compute_max_action_value(p)
                 diff_p = abs(old_val_p - new_val_p)
-                if diff_p > self.theta:
+                if diff_p > self.theta: #threshold for pushing
                     heapq.heappush(pq, (-diff_p, p))
+                    
 
     def compute_mse(self):
         errors = []
@@ -182,11 +183,11 @@ class PrioritizedSweepingAgent:
 
 if __name__ == "__main__":
     env = CatVsMonster()
-    agent = PrioritizedSweepingAgent(env, theta=1e-9, max_iterations=50)
+    agent = PrioritizedSweepingAgent(env, theta=1e-2)#, max_iterations=50)
 
     mse_values = []
-    num_sweeps = 25
-    updates_per_sweep =10
+    num_sweeps = 10
+    updates_per_sweep = 15
 
     for i in range(num_sweeps):
         agent.priority_sweeping(n=updates_per_sweep)

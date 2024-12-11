@@ -4,11 +4,11 @@ import matplotlib.pyplot as plt
 from mazemdp import MazeWorldMDP
 
 class PrioritizedSweepingMaze:
-    def __init__(self, mdp, gamma=0.99, theta=1e-5, max_iterations=1000):
+    def __init__(self, mdp, gamma=0.99, theta=1e-5):#, max_iterations=1000):
         self.mdp = mdp
         self.gamma = gamma
         self.theta = theta
-        self.max_iterations = max_iterations
+        # self.max_iterations = max_iterations
         self.actions = self.mdp.actions
 
         self.V = {}
@@ -127,25 +127,43 @@ class PrioritizedSweepingMaze:
 
 if __name__ == "__main__":
     mdp = MazeWorldMDP(gamma=0.9)
-    agent = PrioritizedSweepingMaze(mdp, gamma=mdp.gamma, theta=1e-9, max_iterations=200)
 
-    mse_values = []
-    iterations = 50
-    updates_per_iter = 10
+    theta = 0.01
+    updates_per_sweeps = [5, 10, 15, 20] #15 best
 
-    for i in range(iterations):
-        agent.priority_sweeping(updates=updates_per_iter)
-        mse = agent.compute_mse()
-        mse_values.append(mse)
+    results = {}  
 
-    agent.print_values()
-    final_policy = agent.derive_policy()
-    agent.print_policy(final_policy)
-
-    plt.figure(figsize=(8,5))
-    plt.plot(range(1, iterations+1), mse_values, marker='o')
+    for updates_per_sweep in updates_per_sweeps:
+        print(f"\nTesting with theta={theta}")
+        agent = PrioritizedSweepingMaze(mdp, gamma=mdp.gamma, theta=theta)
+        
+        mse_values = []
+        iterations = 25  # Number of sweeps
+        
+        for i in range(iterations):
+            agent.priority_sweeping(updates=updates_per_sweep)
+            mse = agent.compute_mse()
+            mse_values.append(mse)
+        
+        # Store the results
+        results[updates_per_sweep] = mse_values
+        
+        # Print final values and policy
+        print("Final Values:")
+        agent.print_values()
+        print("Final Policy:")
+        final_policy = agent.derive_policy()
+        agent.print_policy(final_policy)
+    
+    # Plot the results
+    plt.figure(figsize=(10, 6))
+    for updates_per_sweep, mse_values in results.items():
+        plt.plot(range(1, iterations+1), mse_values, marker='o', label=f"Updates per sweep={updates_per_sweep}")
+    
     plt.xlabel("Iteration")
     plt.ylabel("MSE")
-    plt.title("Prioritized Sweeping Learning Curve (MSE vs Iterations)")
+    plt.title("Prioritized Sweeping Learning Curve (MSE vs Iterations) for Different θ")
+    plt.legend()
     plt.grid(True)
     plt.show()
+
